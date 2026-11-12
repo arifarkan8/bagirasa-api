@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClaimController;
 use App\Http\Controllers\Api\ItemController;
@@ -60,6 +61,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/baca-semua', [NotifikasiController::class, 'tandaiSemuaDibaca']);
     Route::post('/notifications/{id}/baca', [NotifikasiController::class, 'tandaiDibaca'])
         ->whereNumber('id');
+
+    // Panel admin (pengecekan peran admin dilakukan di dalam AdminController)
+    Route::prefix('admin')->group(function () {
+        Route::get('/laporan', [AdminController::class, 'laporan']);
+        Route::patch('/laporan/{id}/tinjau', [AdminController::class, 'tinjauLaporan'])
+            ->whereNumber('id');
+
+        Route::patch('/items/{itemId}/sembunyikan', [AdminController::class, 'sembunyikanItem'])
+            ->whereNumber('itemId');
+        Route::patch('/items/{itemId}/pulihkan', [AdminController::class, 'pulihkanItem'])
+            ->whereNumber('itemId');
+
+        Route::get('/akun', [AdminController::class, 'akun']);
+        Route::patch('/akun/{userId}/blokir', [AdminController::class, 'blokirAkun'])
+            ->whereNumber('userId');
+        Route::patch('/akun/{userId}/pulihkan', [AdminController::class, 'pulihkanAkun'])
+            ->whereNumber('userId');
+
+        Route::get('/log', [AdminController::class, 'log']);
+    });
 });
 
 /*
