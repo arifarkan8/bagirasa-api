@@ -17,8 +17,9 @@ class ItemController extends Controller
 {
     /**
      * Kategori yang diizinkan untuk setiap jenis.
+     * Public agar MetaController bisa membacanya (satu sumber kebenaran).
      */
-    private const KATEGORI = [
+    public const KATEGORI = [
         Item::JENIS_MAKANAN => ['makanan_berat', 'kue_roti', 'minuman', 'makanan_kemasan'],
         Item::JENIS_PAKAIAN => ['pakaian_dewasa', 'pakaian_anak', 'selimut_kain', 'sepatu_tas'],
         Item::JENIS_BARANG => ['perabot', 'elektronik', 'buku_alat_tulis', 'perlengkapan_bayi', 'kebutuhan_bencana', 'lainnya'],
@@ -27,23 +28,24 @@ class ItemController extends Controller
     /**
      * Batas maksimum masa kelayakan makanan (jam) per kategori (Food Safety Guard).
      */
-    private const MAKS_JAM = [
+    public const MAKS_JAM = [
         'makanan_berat' => 4,
         'kue_roti' => 12,
         'minuman' => 6,
         'makanan_kemasan' => 72,
     ];
 
-    private const DEFAULT_JAM = 3;
+    public const DEFAULT_JAM = 3;
 
-    private const KONDISI = ['baru', 'layak_pakai', 'perlu_perbaikan'];
+    public const KONDISI = ['baru', 'layak_pakai', 'perlu_perbaikan'];
 
     /**
      * Kata yang menandakan makanan berisiko dan tidak boleh diposting.
+     * Sengaja tetap private, tidak dibuka ke publik.
      */
     private const KATA_TERLARANG = ['mentah', 'basi', 'sisa makan', 'sisa piring'];
 
-    private const MAKS_POSTING_PER_HARI = 10;
+    public const MAKS_POSTING_PER_HARI = 10;
 
     /**
      * Daftar item dengan pencarian dan filter. Rute ini publik.
