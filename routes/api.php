@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ClaimController;
 use App\Http\Controllers\Api\ItemController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,19 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('throttle:20,1');
     Route::post('/items/{item}', [ItemController::class, 'update']);
     Route::delete('/items/{item}', [ItemController::class, 'destroy']);
+
+    // Klaim
+    Route::post('/items/{itemId}/claim', [ClaimController::class, 'store'])
+        ->whereNumber('itemId')
+        ->middleware('throttle:10,1');
+    Route::get('/claims/me', [ClaimController::class, 'saya']);
+    Route::get('/claims/masuk', [ClaimController::class, 'masuk']);
+    Route::get('/claims/{claim}', [ClaimController::class, 'show'])
+        ->whereNumber('claim');
+    Route::post('/claims/{claimId}/complete', [ClaimController::class, 'complete'])
+        ->whereNumber('claimId');
+    Route::post('/claims/{claimId}/cancel', [ClaimController::class, 'cancel'])
+        ->whereNumber('claimId');
 });
 
 /*
