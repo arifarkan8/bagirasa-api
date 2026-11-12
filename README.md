@@ -1,58 +1,239 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# BagiRasa API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend REST API untuk platform berbagi makanan, pakaian bekas, dan barang layak pakai antara Pemberi dan Penerima di lingkungan lokal. Cocok juga untuk bantuan bencana alam dan kegiatan sosial. Nama "BagiRasa" masih sementara.
 
-## About Laravel
+Arsitektur: decoupled client-server berbasis REST API. Repository ini hanya berisi backend. Frontend dikerjakan terpisah.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Teknologi
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Laravel 12 (PHP 8.2 atau lebih baru)
+- MySQL atau MariaDB (InnoDB)
+- Laravel Sanctum (token bearer)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Fitur Inti
 
-## Learning Laravel
+- Auto-expiry: makanan wajib punya batas kelayakan, status efektif dihitung di server pada setiap request.
+- Temporary locking: klaim mengunci item 30 menit memakai transaction dan `lockForUpdate()`, jadi tidak ada double-claim.
+- Batas 2 klaim aktif per pengguna, penalti no-show (3 klaim hangus berturut-turut membuat akun dibatasi 24 jam).
+- Tautan WhatsApp siap kirim, hanya muncul untuk Penerima dengan klaim aktif.
+- Food Safety Guard: pernyataan layak, batas durasi per kategori, dan penolakan kata berisiko.
+- Privasi: nomor WhatsApp dan lokasi detail tidak muncul di daftar publik.
+- Laporan postingan, panel admin, notifikasi in-app, dan dashboard dampak.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Prasyarat
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Kebutuhan | Keterangan |
+|---|---|
+| PHP 8.2+ | Cek dengan `php -v` |
+| Composer | Cek dengan `composer -V` |
+| MySQL atau MariaDB | Laragon dan XAMPP sama-sama bisa |
+| Git | Cek dengan `git --version` |
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Ekstensi PHP yang wajib aktif: `fileinfo`, `gd`, `mbstring`, `openssl`, `pdo_mysql`, `zip`.
 
-## Agentic Development
+### Catatan untuk pengguna XAMPP
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Laragon sudah menyiapkan semuanya. Di XAMPP ada tiga hal yang dikerjakan satu kali:
+
+1. Pastikan versi PHP 8.2 atau lebih baru. Kalau lebih lama, perbarui XAMPP.
+2. Aktifkan ekstensi di atas lewat `php.ini` (hapus tanda `;` di depan barisnya), lalu restart terminal.
+3. Pasang Composer secara terpisah, lalu tambahkan folder PHP XAMPP (misalnya `C:\xampp\php`) ke PATH Windows supaya perintah `php` dan `composer` bisa dipakai dari terminal.
+
+Proyek dijalankan dengan `php artisan serve`, jadi tidak perlu `htdocs` atau virtual host. Lokasi folder proyek bebas.
+
+## Instalasi
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/arifarkan8/bagirasa-api.git
+cd bagirasa-api
+composer install
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Salin file lingkungan, lalu buat kunci aplikasi.
 
-## Contributing
+Windows (Command Prompt atau Laragon):
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+copy .env.example .env
+php artisan key:generate
+```
 
-## Code of Conduct
+macOS atau Linux:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Security Vulnerabilities
+Buat database kosong bernama `bagirasa` dengan collation `utf8mb4_unicode_ci`, lewat phpMyAdmin atau HeidiSQL. Lewat terminal:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+mysql -u root -e "CREATE DATABASE bagirasa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
 
-## License
+Nilai bawaan di `.env.example` sudah cocok untuk Laragon dan XAMPP (`root` tanpa kata sandi). Kalau MySQL Anda memakai kata sandi, isi `DB_PASSWORD` di file `.env`.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Bangun tabel dan isi data dummy:
+
+```bash
+php artisan migrate --seed
+php artisan storage:link
+```
+
+Jika perintah `storage:link` menjawab link sudah ada, abaikan saja.
+
+## Menjalankan
+
+```bash
+php artisan serve --port=8001
+```
+
+API tersedia di `http://127.0.0.1:8001/api`. Port 8001 dipilih supaya tidak bentrok dengan aplikasi lain yang memakai port 8000. Biarkan terminal ini tetap terbuka selama server dipakai.
+
+Tes cepat:
+
+```bash
+curl.exe http://127.0.0.1:8001/api/items
+```
+
+Hasil yang benar berupa JSON berisi `server_time` dan daftar `items`.
+
+### Scheduler (opsional saat pengembangan)
+
+Scheduler menyapu klaim yang lock-nya habis dan item yang kedaluwarsa tiap menit. Jalankan di terminal terpisah hanya saat ingin menguji fitur itu:
+
+```bash
+php artisan schedule:work
+```
+
+Tanpa scheduler, status tetap benar di setiap request karena dihitung langsung di server. Di server produksi, scheduler dijalankan lewat satu cron job:
+
+```
+* * * * * cd /path/ke/bagirasa-api && php artisan schedule:run >> /dev/null 2>&1
+```
+
+## Akun Dummy
+
+Dibuat oleh seeder. Kata sandi semuanya `password123`. Hanya untuk pengembangan dan demo, jangan dipakai di server asli.
+
+| Email | Peran |
+|---|---|
+| admin@bagirasa.test | admin |
+| siti@bagirasa.test | pengguna |
+| budi@bagirasa.test | pengguna |
+| dewi@bagirasa.test | pengguna |
+| rizky@bagirasa.test | pengguna |
+
+Waktu pada data dummy dihitung relatif dari saat seeder dijalankan. Makanan akan kedaluwarsa dengan sendirinya, jadi jalankan ulang sebelum demo:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+Perintah itu menghapus semua data di database `bagirasa`.
+
+## Autentikasi
+
+Login lewat `POST /api/login` dan membalas `token`. Setiap permintaan berikutnya mengirim header:
+
+```
+Authorization: Bearer <token>
+Accept: application/json
+```
+
+Token berlaku 7 hari. Pengguna tidak pernah mengetik token, frontend yang menyimpannya.
+
+## Ringkasan Endpoint
+
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| POST | /api/register, /api/login | Autentikasi (publik) |
+| POST | /api/logout | Keluar |
+| GET, PATCH | /api/me | Profil sendiri |
+| GET | /api/items | Daftar item, pencarian, dan filter (publik) |
+| GET | /api/items/{id} | Detail item (publik, data sensitif hanya untuk yang berhak) |
+| GET | /api/items/saya | Postingan milik sendiri |
+| POST | /api/items | Buat item |
+| POST, DELETE | /api/items/{id} | Ubah (POST) atau hapus item milik sendiri |
+| POST | /api/items/{id}/claim | Klaim dan kunci item |
+| POST | /api/items/{id}/report | Laporkan postingan |
+| GET | /api/claims/me, /api/claims/masuk | Riwayat klaim, klaim yang masuk ke item saya |
+| GET | /api/claims/{id} | Detail klaim |
+| POST | /api/claims/{id}/complete, /cancel | Konfirmasi selesai, batalkan klaim |
+| GET, POST | /api/notifications/... | Notifikasi in-app |
+| GET | /api/stats/impact | Dashboard dampak (publik) |
+| GET, PATCH | /api/admin/... | Panel admin (khusus admin) |
+
+Daftar lengkap beserta contoh isi permintaan ada di `docs/API.md`. Daftar rute yang terpasang bisa dilihat dengan:
+
+```bash
+php artisan route:list --path=api
+```
+
+## CORS
+
+Frontend yang boleh memanggil API diatur lewat `CORS_ALLOWED_ORIGINS` di `.env`, dipisah koma tanpa spasi. Kalau dikosongkan, dipakai `localhost:3000` dan `localhost:5173` (port bawaan Next.js dan Vite).
+
+```
+CORS_ALLOWED_ORIGINS=http://localhost:4200,https://contoh-frontend.com
+```
+
+Setelah mengubah `.env`, jalankan `php artisan config:clear`.
+
+## Pengujian
+
+### Uji otomatis
+
+Uji otomatis berjalan di database terpisah bernama `bagirasa_test`, supaya data pengembangan tidak terhapus. Buat database kosong itu dulu (collation `utf8mb4_unicode_ci`), lalu:
+
+```bash
+php artisan config:clear
+php artisan test
+```
+
+Tabelnya dibuat sendiri oleh tes. Di dalam tes ada penjaga yang menghentikan eksekusi kalau database aktif bukan `bagirasa_test`.
+
+### Uji konkurensi (bukti anti double-claim)
+
+Beberapa proses PHP terpisah mengklaim satu item pada detik yang sama. Hasil yang benar: tepat satu klaim berhasil.
+
+```bash
+php scripts/uji-konkurensi.php
+php scripts/uji-konkurensi.php --permintaan=20 --putaran=5
+```
+
+Skrip ini memakai database `bagirasa`, tetapi hanya menyentuh akun berakhiran `@konkurensi.test` yang dihapus lagi di akhir. Skrip menolak jalan kalau `APP_ENV=production`.
+
+## Struktur Singkat
+
+```
+app/Http/Controllers/Api/   Auth, Item, Claim, Report, Notifikasi, Admin, Stats
+app/Models/                 User, Item, Claim, Report, Notifikasi, ActivityLog
+app/Console/Commands/       RapikanKlaimDanItem (scheduler)
+database/migrations/        Struktur tabel
+database/seeders/           Data dummy
+routes/api.php              Semua rute API
+routes/console.php          Jadwal scheduler
+scripts/                    Uji konkurensi
+tests/Feature/              Uji otomatis
+```
+
+## Masalah yang Sering Muncul
+
+| Pesan atau gejala | Penyebab dan solusi |
+|---|---|
+| `could not find driver` | Ekstensi `pdo_mysql` belum aktif (umum di XAMPP). Aktifkan di `php.ini`, restart terminal. |
+| `Connection refused` | MySQL belum menyala. Klik Start All di Laragon atau Start MySQL di XAMPP. |
+| `Unknown database 'bagirasa'` | Database belum dibuat atau namanya salah ketik. |
+| `Access denied for user 'root'` | Root memakai kata sandi. Isi `DB_PASSWORD` di `.env`, lalu `php artisan config:clear`. |
+| `No application encryption key` | Jalankan `php artisan key:generate`. |
+| `Failed to listen on 127.0.0.1:8001` | Port dipakai aplikasi lain. Pakai `--port=8002` dan sesuaikan alamat di frontend. |
+| Perubahan `.env` tidak terbaca | Jalankan `php artisan config:clear`, lalu restart server. |
+| Foto tidak tampil | Jalankan `php artisan storage:link`. |
+
+## Keamanan
+
+- File `.env` tidak boleh masuk Git (sudah ada di `.gitignore`).
+- Di server asli wajib `APP_DEBUG=false` dan `APP_ENV=production`, serta HTTPS.
+- Ganti kata sandi akun dummy atau hapus akunnya sebelum dipakai publik.
+- Waktu disimpan dalam UTC. Frontend menampilkannya dalam WIB.
