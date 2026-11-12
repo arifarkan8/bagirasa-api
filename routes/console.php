@@ -1,8 +1,14 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+/*
+|--------------------------------------------------------------------------
+| Jadwal tugas otomatis BagiRasa
+|--------------------------------------------------------------------------
+| Menyapu klaim yang lock-nya habis, menutup item kedaluwarsa, dan
+| mengirim peringatan lock hampir habis. Berjalan tiap menit.
+*/
+Schedule::command('bagirasa:rapikan')
+    ->everyMinute()
+    ->withoutOverlapping();
