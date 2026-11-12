@@ -294,7 +294,9 @@ class ItemController extends Controller
     }
 
     /**
-     * Menghapus item milik sendiri (soft delete). Tidak bisa saat sedang terkunci.
+     * Menghapus item milik sendiri (soft delete). Tidak bisa saat sedang
+     * terkunci, dan tidak bisa untuk item yang sudah selesai diserahkan
+     * supaya riwayat serah terima tetap akurat.
      */
     public function destroy(Request $request, Item $item): JsonResponse
     {
@@ -302,6 +304,12 @@ class ItemController extends Controller
 
         if ($item->user_id !== $user->id) {
             return response()->json(['message' => 'Anda tidak berhak menghapus item ini.'], 403);
+        }
+
+        if ($item->status === Item::STATUS_COMPLETED) {
+            return response()->json([
+                'message' => 'Item yang sudah selesai diserahkan tidak bisa dihapus.',
+            ], 422);
         }
 
         if ($item->status === Item::STATUS_LOCKED && $item->klaimAktif()->exists()) {
