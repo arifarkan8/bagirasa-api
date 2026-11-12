@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ClaimController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\StatsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,6 +21,9 @@ Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:10,1');
 
 Route::get('/items', [ItemController::class, 'index']);
+
+Route::get('/stats/impact', [StatsController::class, 'dampak'])
+    ->middleware('throttle:60,1');
 
 /*
 |--------------------------------------------------------------------------
