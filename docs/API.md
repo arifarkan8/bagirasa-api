@@ -5,7 +5,7 @@ Dokumen untuk pengembang frontend. Semua isi di sini mengikuti kode backend yang
 ## Daftar Isi
 
 1. [Ketentuan Umum](#1-ketentuan-umum)
-2. [Nilai Tetap](#2-nilai-tetap)
+2. [Nilai Tetap dan Data Referensi](#2-nilai-tetap-dan-data-referensi)
 3. [Autentikasi](#3-autentikasi)
 4. [Item](#4-item)
 5. [Klaim](#5-klaim)
@@ -106,10 +106,13 @@ Pesan validasi bawaan Laravel berbahasa Inggris, sedangkan pesan aturan bisnis (
 | `POST /items/{id}/claim` | 10 per menit |
 | `POST /items/{id}/report` | 10 per menit |
 | `GET /stats/impact` | 60 per menit |
+| `GET /meta` | 60 per menit |
 
 ---
 
-## 2. Nilai Tetap
+## 2. Nilai Tetap dan Data Referensi
+
+Bagian ini memuat semua nilai tetap yang dipakai API. Daftar yang sama tersedia dalam bentuk JSON lewat `GET /meta` (lihat akhir bagian ini), jadi frontend tidak perlu menyalinnya ke kode.
 
 ### Jenis, kategori, dan kondisi item
 
@@ -150,6 +153,51 @@ Status item dan klaim di respons adalah **status efektif**, dihitung server saat
 ### Tipe notifikasi
 
 `item_diklaim`, `klaim_dibatalkan`, `klaim_selesai`, `lock_hampir_habis`, `klaim_kedaluwarsa`, `item_disembunyikan`
+
+### Batas unggah foto
+
+Format jpg, jpeg, png, atau webp, ukuran maksimal 2 MB. Batas ini tidak ada di `GET /meta`, jadi tulis sebagai konstanta di frontend dan perbarui bila dokumen ini berubah.
+
+### GET /meta
+
+Publik, tanpa token. Mengirim semua daftar dan batas di atas dalam satu respons. Nilainya dibaca langsung dari kode backend, jadi bila backend menambah kategori atau alasan laporan baru, respons ini ikut berubah tanpa perlu mengubah dokumen atau frontend.
+
+```json
+{
+  "jenis": ["makanan", "pakaian", "barang"],
+  "kategori": {
+    "makanan": ["makanan_berat", "kue_roti", "minuman", "makanan_kemasan"],
+    "pakaian": ["pakaian_dewasa", "pakaian_anak", "selimut_kain", "sepatu_tas"],
+    "barang": ["perabot", "elektronik", "buku_alat_tulis", "perlengkapan_bayi", "kebutuhan_bencana", "lainnya"]
+  },
+  "kondisi": ["baru", "layak_pakai", "perlu_perbaikan"],
+  "makanan": {
+    "durasi_bawaan_jam": 3,
+    "durasi_maks_jam": {
+      "makanan_berat": 4,
+      "kue_roti": 12,
+      "minuman": 6,
+      "makanan_kemasan": 72
+    }
+  },
+  "posting": { "maks_per_hari": 10 },
+  "klaim": { "maks_aktif": 2, "durasi_lock_menit": 30 },
+  "alasan_laporan": ["basi", "tidak_sesuai_foto", "penipuan", "konten_tidak_pantas", "lainnya"],
+  "status": {
+    "item": ["available", "locked", "completed", "expired", "cancelled", "hidden"],
+    "klaim": ["active", "completed", "cancelled", "expired"],
+    "akun": ["aktif", "dibatasi", "diblokir"],
+    "laporan": ["pending", "diterima", "ditolak"]
+  },
+  "tipe_notifikasi": ["item_diklaim", "klaim_dibatalkan", "klaim_selesai", "lock_hampir_habis", "klaim_kedaluwarsa", "item_disembunyikan"]
+}
+```
+
+Keterangan:
+
+- `kategori` berbentuk objek yang kuncinya adalah `jenis`. Cocok untuk dropdown bertingkat: pilih jenis dulu, lalu kategorinya.
+- Daftar kata terlarang Food Safety Guard sengaja tidak disertakan.
+- Isi respons ini berubah jarang. Panggil sekali saat aplikasi dibuka, lalu simpan di memori.
 
 ---
 
@@ -677,6 +725,27 @@ Terbaru dulu, 25 per halaman. Balasan: `{"server_time":"...","logs":{ ...paginas
 
 Simpan `token` dari login atau registrasi (misalnya di `localStorage`), lalu pasang di header `Authorization` pada setiap permintaan. Bila ada respons **401** pada rute yang butuh login, hapus token dan arahkan pengguna ke halaman login. Pengguna tidak pernah mengetik token.
 
+### Memuat daftar pilihan dari /meta
+
+Panggil `GET /meta` sekali saat aplikasi dibuka dan simpan hasilnya. Pakai untuk mengisi dropdown jenis, kategori, kondisi, alasan laporan, dan untuk membatasi isian durasi makanan, jadi tidak ada daftar yang diketik ulang di frontend.
+
+```js
+let meta = null;
+
+async function muatMeta() {
+  const res = await fetch(`${API}/meta`, { headers: { Accept: 'application/json' } });
+  meta = await res.json();
+}
+
+// Dropdown kategori bertingkat: pilih jenis dulu
+const kategoriUntuk = (jenis) => meta.kategori[jenis] ?? [];
+
+// Batas durasi makanan untuk kategori terpilih
+const maksJam = (kategori) => meta.makanan.durasi_maks_jam[kategori];
+```
+
+Tampilkan label yang ramah pengguna lewat satu kamus di frontend (misalnya `makanan_berat` menjadi "Makanan berat"), dan beri cabang bawaan untuk nilai yang belum ada di kamus, supaya kategori baru dari backend tetap tampil walau labelnya belum dibuat.
+
 ### Countdown yang sinkron dengan server
 
 Jam perangkat pengguna bisa salah, jadi hitung selisihnya terhadap `server_time` sekali saat data dimuat:
@@ -753,3 +822,4 @@ Baca `errors` dari respons 422, lalu tampilkan pesan di bawah field yang sesuai 
 - Pengguna biasa yang membuka `/api/admin/...` mendapat 403, jadi sembunyikan menu admin berdasarkan `user.role`, tetapi jangan mengandalkannya sebagai pengaman.
 - Alamat frontend yang boleh memanggil API diatur backend lewat `CORS_ALLOWED_ORIGINS`. Bila browser menolak dengan pesan CORS, minta pemilik backend menambahkan alamat frontend Anda.
 - Foto diambil langsung dari `foto_url` memakai tag gambar biasa, tanpa header khusus.
+- Daftar kategori, kondisi, alasan laporan, dan batas durasi dibaca dari `GET /meta`, bukan ditulis ulang. Hanya batas unggah foto (2 MB) yang perlu ditulis sendiri di frontend.
