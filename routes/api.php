@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClaimController;
 use App\Http\Controllers\Api\ItemController;
+use App\Http\Controllers\Api\NotifikasiController;
+use App\Http\Controllers\Api\ReportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,6 +48,18 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('claimId');
     Route::post('/claims/{claimId}/cancel', [ClaimController::class, 'cancel'])
         ->whereNumber('claimId');
+
+    // Laporan postingan
+    Route::post('/items/{itemId}/report', [ReportController::class, 'store'])
+        ->whereNumber('itemId')
+        ->middleware('throttle:10,1');
+
+    // Notifikasi
+    Route::get('/notifications', [NotifikasiController::class, 'index']);
+    Route::get('/notifications/jumlah', [NotifikasiController::class, 'jumlahBelumDibaca']);
+    Route::post('/notifications/baca-semua', [NotifikasiController::class, 'tandaiSemuaDibaca']);
+    Route::post('/notifications/{id}/baca', [NotifikasiController::class, 'tandaiDibaca'])
+        ->whereNumber('id');
 });
 
 /*

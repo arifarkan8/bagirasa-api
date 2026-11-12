@@ -38,6 +38,9 @@ class AuthController extends Controller
             'area' => $data['area'],
         ]);
 
+        // Muat ulang agar nilai default dari database (role, status_akun) ikut terbaca.
+        $user->refresh();
+
         ActivityLog::catat('akun_dibuat', $user->id, 'user', $user->id, null, $request->ip());
 
         $token = $user->createToken('api-token', ['*'], now()->addDays(7))->plainTextToken;
